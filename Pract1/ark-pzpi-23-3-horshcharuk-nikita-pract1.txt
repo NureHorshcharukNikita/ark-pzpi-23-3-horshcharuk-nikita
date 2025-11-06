@@ -1,1 +1,592 @@
+﻿Міністерство освіти і науки України 
+Харківський національний університет радіоелектроніки 
+
+
+Кафедра програмної інженерії
+ 
+
+
+Звіт
+з практичної роботи №1
+з дисципліни «Аналіз та рефакторинг коду»
+
+
+
+
+
+
+Виконав:                                                           	     Перевірив:
+ст. гр. ПЗПІ-23-3                                    	       	     ст. викл. Сокорчук І. П.
+Горщарук Н. С.
+
+
+
+
+
+
+
+Харків 2025
+1 ІСТОРІЯ ЗМІН
+№ДатаВерсія звітуОпис змін та виправлень103.11.20250.1Оформлено повністю текстовий звіт206.11.20250.2Додано посилання на відео та скриншоти слайдів у додаток
+
+2 ЗАВДАННЯ
+     Згідно з методичними вказівками, необхідно:
+* обрати мову програмування (C#) та тему;
+* дослідити основні рекомендації з написання чистого, зрозумілого та підтримуваного коду;
+* продемонструвати ці рекомендації на прикладах програмного коду з поясненнями;
+* описати принципи рефакторингу, дотримання парадигм програмування та застосування сучасних інструментів для аналізу якості коду;
+* підготувати звіт і презентацію результатів роботи.
+     
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+3.1  Особливості C# у розробці ігор
+     C# — це високорівнева, об’єктно-орієнтована мова програмування, що поєднує простоту синтаксису з потужними можливостями .NET-платформи. У сфері розробки ігор вона посідає особливе місце, оскільки є основною мовою програмування для рушія Unity [2], одного з найпопулярніших інструментів у сучасному геймдизайні.
+     C# використовується також у рушіях, побудованих на .NET, Mono, Godot (C# підтримка через Mono), а також у власних внутрішніх рушіях великих студій, де важлива інтеграція з інструментами Windows або серверними системами Microsoft.
+     Основні переваги C# у розробці ігор: 
+1. Об’єктно-орієнтована парадигма (ООП) 
+C# підтримує базові принципи ООП: інкапсуляції, наслідуванні та поліморфізмі. Це дозволяє:
+* логічно структурувати ігровий код; 
+* розділяти функціональність між класами (наприклад, Player, Enemy, Weapon, GameManager); 
+* створювати повторно використовувані компоненти, що легко розширюються. 
+2. Інтеграція з .NET-екосистемою
+C# повністю сумісна з бібліотеками .NET Framework або .NET Core, тому розробник може використовувати: 
+* розвинуті колекції та LINQ-запити для роботи з даними; 
+* асинхронні методи (async/await) для оптимізації роботи з потоками; 
+* потужні інструменти тестування та профілювання (наприклад, NUnit, JetBrains Rider, Visual Studio Profiler). 
+3. Кросплатформеність через Mono та IL2CPP 
+Unity-компілятор може перетворювати C#-код у проміжний байт-код IL (Intermediate Language), який потім компілюється у нативний код для конкретної платформи (через IL2CPP). Завдяки цьому C#-ігри можна запускати на: 
+* Windows, macOS, Linux; 
+* Android, iOS; 
+* ігрових консолях (PlayStation, Xbox, Nintendo Switch); 
+* у вебверсіях (через WebGL). 
+4. Сучасні засоби розробки 
+Інструменти, які використовуються з C#, мають широкі можливості: 
+* Visual Studio або Rider надають зручний дебагер, автодоповнення, профілювання, рефакторинг; 
+* підтримка Unity Editor Integration, що дозволяє швидко переходити від коду до сцени; 
+* Unity Profiler допомагає виявити "вузькі місця" в продуктивності (CPU, GPU, пам’ять).
+5. Компонентна архітектура Unity
+У рушії Unity кожен об’єкт сцени є GameObject, до якого додаються компоненти (Component) — класи на C#, що описують поведінку або властивості об’єкта. Сценарії на C#, що наслідують MonoBehaviour, інтегруються в життєвий цикл рушія — це спрощує створення й управління об’єктами сцени. 
+6. Життєвий цикл MonoBehaviour 
+Unity визначає послідовність викликів спеціальних методів: 
+* Awake() — ініціалізація перед запуском сцени; 
+* Start() — виконується на початку гри, коли об’єкт стає активним; 
+* Update() — викликається кожен кадр (Frame), підходить для обробки вводу чи анімації; 
+* FixedUpdate() — викликається з фіксованим інтервалом часу, застосовується для фізики; 
+* OnDestroy() — звільнення ресурсів при видаленні об’єкта. 
+Така структура дозволяє розробникам чітко контролювати життєвий цикл ігрових об’єктів, що спрощує налагодження і підтримку.
+3.2  Важливість правил оформлення коду
+     Розробка ігор — це колективна, комплексна діяльність, де від якості коду залежить не лише функціональність гри, а й її продуктивність, стабільність та можливість подальшого розвитку. Дотримання правил оформлення коду має вирішальне значення для:
+* читабельності – добре структурований і оформлений код зрозумілий навіть тим, хто бачить його вперше.
+* підтримуваності – єдиний стиль у команді зменшує час на виправлення помилок і рефакторинг.
+* командної роботи – у великих Unity-проєктах одночасно працює кілька програмістів. Спільні стандарти усувають хаос у стилі коду.
+* зменшення кількості помилок – стандартизований код легше перевіряти автоматичними засобами – аналізаторами, тестами, профайлерами.
+     Тож, як і будь-які розробники програм, розробники ігор, теж дотримуються єдиних стандартів оформлення, архітектурних принципів і практик чистого програмування.
+3.3  Правила оформлення програмного коду
+3.3.1 Структура кода
+1. Структура папок:
+Assets/
+├── Scripts/
+│   ├── Player/
+│   │   ├── Player.cs
+│   │   ├── PlayerMovement.cs
+│   ├── Enemies/
+│   │   ├── Enemy.cs
+│   │   └── EnemyAI.cs
+│   ├── Managers/
+│   └── UI/
+├── Prefabs/
+├── Scenes/
+└── Art/
+2. Namespace відображає структуру проєкту:
+Game.Managers, Game.Player, Game.UI.
+3. Один клас — один файл. Назва файлу має відповідати назві класу: PlayerController.cs містить клас PlayerController.
+4. Логічний поділ на модулі та класи. Кожен клас повинен виконувати одну чітку функцію (Single Responsibility Principle).
+     У Unity зручно розділяти функціональність за компонентами:
+* Погано: клас робить усе одразу
+class Player : MonoBehaviour
+{
+    void Update() { Move(); Shoot(); SaveData(); }
+}
+* Добре: кожен компонент має власну відповідальність
+class PlayerMovement : MonoBehaviour { void Move() { /* ... */ } }
+class PlayerShooting : MonoBehaviour { void Shoot() { /* ... */ } }
+class PlayerSaveSystem : MonoBehaviour { void SaveData() { /* ... */ } }
+Така структура полегшує тестування, повторне використання та підтримку проєкту.
+5. Використання коментарів для структурування – великі класи можна розділяти коментарними секціями:
+// === Initialization ===
+// === Player Movement ===
+// === Event Handlers ===
+Це допомагає орієнтуватися в коді під час командної роботи.
+3.3.2 Форматування:
+1. Відступи: Використовуються 4 пробіли (або 1 табуляція).
+* Погано:
+if (isGrounded){
+Jump();
+}
+* Добре:
+if (isGrounded)
+{
+   Jump();
+}
+2. Розташування фігурних дужок: Відкриваюча дужка { ставиться з нового рядка.
+* Погано:
+void Start(){InitializePlayer();}
+* Добре:
+void Start()
+{
+    InitializePlayer();
+}
+3. Пробіли навколо операторів: Пробіли ставляться перед і після операторів =, +, -, <, > тощо.
+* Погано:
+speed=baseSpeed+5;
+* Добре:
+speed = baseSpeed + 5;
+4. Порожні рядки: Використовуються для логічного розділення частин коду.
+* Погано:
+void Start()
+{
+    Setup();
+}
+void Update()
+{
+    Move();
+}
+* Добре:
+void Start()
+{
+    Setup();
+}
+
+void Update()
+{
+    Move();
+}
+5. Довжина рядка: Рекомендована до 120 символів.
+6. Сортування using: Спочатку системні простори імен, потім користувацькі.
+* Погано:
+using Game.Managers;
+using System;
+using UnityEngine;
+* Добре:
+using System;
+using UnityEngine;
+using Game.Managers;
+3.3.3 Іменування:
+     Unity не має суворо встановлених правил іменування [4, 5], проте надає рекомендації та загальні принципи, спрямовані на забезпечення послідовності й читабельності коду. Ці підходи ґрунтуються на офіційних джерелах Unity (зокрема, Unity C# Style Guide) та найкращих практиках, що склалися у спільноті розробників. Нижче наведено узагальнені рекомендації, яких доцільно дотримуватись у командній роботі. 
+1. Імена повинні бути зрозумілими, самодокументованими та відображати призначення елемента. Потрібно уникати коротких, неінформативних або абстрактних назв:
+* Погано: tmp, obj, doIt()
+* Добре: playerHealth, enemyObject, SaveProgress()
+2. Класи, структури, enum-и: PascalCase (тобто кожне слово починається з великої літери).
+* Погано: 
+class playercontroller {}
+struct damage_data {}
+enum game_state { menu, playing, paused }
+* Добре:
+class PlayerController {}
+struct DamageData {}
+enum GameState { Menu, Playing, Paused }
+3. Інтерфейси: Починати з префіксу I + PascalCase.
+* Погано:
+interface DamageableInterface {}
+interface movable {}
+* Добре:
+interface IDamageable {}
+interface IMovable {}
+4. Методи та властивості: PascalCase. Для методів — дієслівна форма; для властивостей — іменник або словосполучення, яке відображає стан чи характеристику.
+* Погано:
+void takedamage(int x) {}
+int health;
+* Добре:
+void TakeDamage(int amount) {}
+int Health { get; set; }
+5. Змінні та параметри: camelCase (початкова літера — мала).
+* Погано:
+int Player_Health;
+float Move_Speed;
+string ENEMYNAME;
+* Добре:
+int playerHealth;
+float moveSpeed;
+string enemyName;
+6. Приватні поля: Офіційно Unity не диктує обов’язковий префікс, але часто рекомендується префікс _ + camelCase.
+* Погано:
+private Rigidbody rigidBody;
+private int current_score;
+* Добре:
+private Rigidbody _rigidbody;
+private int _currentScore;
+7. Константи: UPPER_CASE.
+* Погано:
+private const float MaxSpeed = 10f;
+private const int maxHealth = 100;
+* Добре:
+private const float MAX_SPEED = 10f;
+private const int MAX_HEALTH = 100;
+8. Події та делегати: Для подій часто використовують префікс On (наприклад OnPlayerDied); для делегатів — суфікс Handler або EventHandler.
+* Погано:
+public event Action PlayerDeath;
+public delegate void HandleDamage(int amount);
+* Добре:
+public event Action OnPlayerDied;
+public delegate void DamageHandler(int amount);
+9. Простори імен (Namespace): PascalCase, структура має відповідати проекту.
+* Погано:
+namespace game_managers {}
+namespace managers {}
+* Добре:
+namespace Game.Managers {}
+namespace Game.UI {}
+10.  Файли: Назва файлу повинна відповідати назві основного класу, який він містить.
+* Погано: 
+player.cs, controller1.cs, NewScript.cs 
+* Добре: 
+PlayerController.cs містить клас PlayerController
+11.  Unity-об’єкти:
+* Сцени: Scene_MainMenu, Scene_Level01
+Погано: mainmenu, menuScene1
+* Префаби: Enemy_Prefab, Player_Prefab
+Погано: enemy, prefab1
+* Теги: Player, Enemy, UI_Button
+Погано: playerTag, enemy_obj, button
+Але ці формати залежать від команди, важлива узгодженість.
+3.3.4 Коментарі
+1. Коли і як коментувати
+* Коментар пояснює чому рішення прийняте, а не що робить код.
+* Коментар TODO для відкладених діл на потім
+* Не дублють очевидне, пишуться коротко, по суті.
+// Погано
+// Додаємо бонус до здоров’я
+playerHealth += bonusHealth;
+
+// Добре
+// Бонус за дослідження рівня — мотивує гравця вивчати карту
+playerHealth += bonusHealth;
+     Але в більшості випадках, якщо код потребує коментар, то цей код погано написаний. Якщо все ж таки коментарі використовують то вони мають допомагати орієнтуватися в логіці, а не заміняти погані назви змінних.
+2. Документування коду
+     У C# прийнято використовувати XML-коментарі для автоматичної генерації документації:
+/// <summary>
+/// Завдає шкоди ворогу.
+/// </summary>
+/// <param name="amount">Кількість шкоди.</param>
+public void TakeDamage(int amount)
+{
+    health -= amount;
+}
+У Unity також корисно додавати атрибути:
+[SerializeField, Tooltip("Швидкість руху персонажа")]
+private float moveSpeed = 5f;
+Переваги:
+* Автоматично з’являються підказки в IDE.
+* Зрозуміло для інших учасників команди.
+* Генерується документація (DocFX, Doxygen тощо).
+3.4 Дотримання ООП та SOLID у іграх
+3.3.1 SOLID принципи:
+1. Single Responsibility Principle (SRP): клас має одну чітку відповідальність.
+* Погано:
+class Player : MonoBehaviour
+{
+    void Update() { Move(); Shoot(); SaveData(); }
+}
+* Добре:
+class PlayerMovement : MonoBehaviour { void Move() { /* ... */ } }
+class PlayerShooting : MonoBehaviour { void Shoot() { /* ... */ } }
+class PlayerSaveSystem : MonoBehaviour { void SaveData() { /* ... */ } }
+ Такі класи легше тестувати, змінювати та перевикористовувати.
+2. Open/Closed Principle (OCP): клас має бути відкритим до розширення, але закритим до змін.
+* Погано (switch/if змушує змінювати існуючий код):
+class Enemy
+{
+    enum AttackType { Melee, Ranged }
+    private AttackType _type;
+
+    public void Attack()
+    {
+        switch (_type)
+        {
+            case AttackType.Melee: /* ближній бій */ break;
+            case AttackType.Ranged: /* дальній бій */ break;
+        }
+    }
+}
+* Добре (розширення через інтерфейси/поліморфізм):
+interface IAttack { void Attack(); }
+
+class MeleeAttack : IAttack { public void Attack() { /* ближній бій */ }}
+class RangedAttack : IAttack { public void Attack() { /* дальній бій */ }}
+
+class Enemy
+{
+    private IAttack _attack;
+    public Enemy(IAttack attack) => _attack = attack;
+    public void PerformAttack() => _attack.Attack();
+}
+// Додаємо новий тип атаки, не змінюючи Enemy.
+3. Liskov Substitution Principle (LSP): підкласи мають замінювати базові без зміни поведінки.
+* Погано (порушує очікування, кидає виняток):
+class Weapon
+{
+    public virtual void Attack() { Debug.Log("Атака звичайною зброєю"); }
+}
+
+class Bow : Weapon
+{
+    public override void Attack()
+    {
+        throw new NotImplementedException(); // порушення LSP
+    }
+}
+* Добре (абстракція гарантує коректну реалізацію):
+abstract class Weapon
+{
+    public abstract void Attack();
+}
+
+class Sword : Weapon
+{
+    public override void Attack() { Debug.Log("Бій мечем!"); }
+}
+
+class Bow : Weapon
+{
+    public override void Attack() { Debug.Log("Постріл із лука!"); }
+}
+
+// Поліморфізм працює без сюрпризів:
+Weapon weapon = new Bow();
+weapon.Attack();
+4. Interface Segregation Principle (ISP): краще багато дрібних інтерфейсів, ніж один великий.
+* Погано (зайві методи для частини реалізацій):
+interface IEnemy
+{
+    void Move();
+    void Attack();
+    void Fly();
+    void Swim();
+}
+* Добре (дрібні інтерфейси за здібностями):
+interface IMovable { void Move(); }
+interface IAttackable { void Attack(); }
+interface IFlyable { void Fly(); }
+interface ISwimmable { void Swim(); }
+
+class GroundEnemy : IMovable, IAttackable
+{
+    public void Move() { /* ... */ }
+    public void Attack() { /* ... */ }
+}
+5. Dependency Inversion Principle (DIP): залежності задаються через абстракції, а не через конкретні класи.
+* Погано (жорстке зв’язування та new усередині):
+class Player : MonoBehaviour
+{
+    private LaserGun _weapon = new LaserGun(); // жорстка залежність
+
+    void Fire() { _weapon.Shoot(); }
+}
+* Добре (залежність від інтерфейсу + інжекція):
+public interface IWeapon { void Shoot(); }
+public class LaserGun : IWeapon { public void Shoot() { /* ... */ } }
+
+public class Player : MonoBehaviour
+{
+    private IWeapon _weapon;
+    public Player(IWeapon weapon) { _weapon = weapon; } // конструкторна інжекція
+    public void Fire() { _weapon.Shoot(); }
+}
+* Добре з контейнером (Zenject/Extenject):
+public class PlayerInstaller : MonoInstaller
+{
+    public override void InstallBindings()
+    {
+        Container.Bind<IWeapon>().To<LaserGun>().AsTransient();
+    }
+}
+3.3.2 Рефакторинг
+     Регулярне покращення структури коду без зміни логіки. У Unity це часто включає виділення скриптів-компонентів та оптимізацію оновлень у Update(). 
+3.3.3 Патерни проектування
+     Aктивно застосовуються:
+* Singleton — для менеджерів стану чи налаштувань; 
+* Observer (Event System) — для сповіщення про зміни у грі; 
+* Factory / Object Pooling — для ефективного створення та повторного використання об’єктів; 
+* State Machine — для реалізації поведінки персонажів чи логіки меню.
+3.3.4 Оптимізація структури коду
+* Уникати дублювання логіки (DRY — Don’t Repeat Yourself). 
+* Використовувати компонентний підхід: кожен скрипт має відповідати за одну функцію.
+* Групувати пов’язані класи в namespace (наприклад, Game.Player, Game.Enemy).
+3.5 Конвенції стилю кодування для C# і Unity
+1. Дотримуйтесь Microsoft C# Coding Conventions [6]
+2. Використовуйте Unity Style Guide [7]
+3. Інструменти перевірки:
+* .editorconfig — автоматичне форматування;
+* StyleCop, Roslyn Analyzers — перевірка коду на відповідність стандартам; [8]
+* SonarQube — глибокий аналіз якості коду [9]
+     Приклад автоматичної перевірки: 
+     При збереженні файлу IDE виправляє форматування, ідентифікатори, розташування дужок — це гарантує однаковий стиль у всьому проєкті.
+3.6 Кодування на основі тестування (TDD)
+     Unity підтримує Unity Test Framework — юніт-тести у двох режимах:
+* Edit Mode — виконуються в редакторі без запуску гри;
+* Play Mode — під час реального ігрового процесу.
+      using NUnit.Framework;
+      
+public class PlayerTests
+{
+    [Test]
+    public void Player_TakesDamage_Correctly()
+    {
+        var player = new Player();
+        player.TakeDamage(10);
+        Assert.AreEqual(90, player.Health);
+    }
+}
+Переваги:
+* Перевірка логіки без запуску сцени.
+* Автоматичний контроль стабільності після рефакторингу.
+* Частина практики Clean Code і SOLID.
+     Рекомендовано покривати тестами ключову бізнес-логіку, геймплейні системи, AI, UI-реакції. 
+     Для перевірки продуктивності використовують Performance Testing Package.
+3.7 Інструменти та автоматизація для підтримки якості коду
+* Roslyn Analyzers, StyleCop — контроль стилю C#.
+* SonarQube, Codacy — статичний аналіз помилок і складності.
+* dotnet format — автоформатування коду.
+* Unity Profiler, Frame Debugger, Memory Profiler — оптимізація FPS і пам’яті.
+* Zenject (Extenject) — реалізація принципу Dependency Injection.
+* NUnit / Unity Test Runner — модульне тестування.
+Автоматизація (CI/CD):
+• Виконання тестів і аналізу коду на GitHub Actions чи GitLab CI перед злиттям у main-гілку.
+• Таким чином забезпечується постійна якість і стабільність проєкту.
+
+
+3.8 Приклади оформлення коду: аналіз
+Поганий приклад
+public class Player {int hp = 100; void dmg(int d){hp-=d;if(hp<=0)Debug.Log("dead");}}
+Гарний приклад
+public class Player
+{
+    private int _health = 100;
+
+    public void TakeDamage(int damage)
+    {
+        _health -= damage;
+        if (_health <= 0)
+        {
+            Debug.Log("Player is dead");
+        }
+    }
+}
+     Другий варіант дотримується PascalCase, правильного форматування та чіткої структури — такий код легко розширювати та налагоджувати.
+
+
+4 ВИСНОВКИ
+* Було розглянуто особливості використання мови програмування C# у сфері розробки ігор, її роль у рушії Unity та переваги, зокрема об’єктно-орієнтований підхід, інтеграцію з .NET-екосистемою, кросплатформеність і компонентну архітектуру.
+* Проаналізовано важливість дотримання правил оформлення коду для підвищення читабельності, підтримуваності та ефективної командної роботи в ігрових проєктах.
+* Вивчено стандарти форматування та іменування елементів коду в Unity-проєктах, що сприяє єдиному стилю, структурованості та спрощенню супроводу програмного забезпечення.
+* Розглянуто застосування ООП-підходу та принципів SOLID, які забезпечують гнучкість, модульність і масштабованість архітектури ігор.
+* Показано значення рефакторингу, патернів проектування (Singleton, Observer, Factory, State Machine) і принципів DRY як ключових інструментів підтримки якості коду.
+* Описано інструменти автоматизації та тестування (Roslyn Analyzers, StyleCop, SonarQube, NUnit, Unity Profiler), які дозволяють контролювати відповідність коду стандартам, оптимізувати продуктивність і гарантувати стабільність роботи проєкту.
+* Зроблено висновок, що поєднання чистого коду, стандартів оформлення, SOLID-принципів і автоматизованого тестування є основою професійної розробки ігор на C# та Unity, забезпечуючи їхню надійність, масштабованість і довготривалу підтримку.
+
+
+
+5 ВИКОРИСТАНІ ДЖЕРЕЛА
+1. Martin R.C. Clean Code: A Handbook of Agile Software Craftsmanship. — Prentice Hall, 2008.
+2. Unity Documentation — https://docs.unity3d.com/
+3. Unity — Formatting Best Practices for C# Scripting. https://unity.com/how-to/formatting-best-practices-c-scripting-unity
+4. Unity — Naming and Code Style Tips for C# Scripting. https://unity.com/how-to/naming-and-code-style-tips-c-scripting-unity
+5. Kybernetik — C# Unity Coding Standard (Naming). https://kybernetik.com.au/cs-unity/docs/coding-standard/naming
+6. Microsoft Docs — C# Coding Conventions. https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions
+7. Unity — C# Style Guide for Unity 6. https://unity.com/resources/c-sharp-style-guide-unity-6 
+8. StyleCop & Roslyn Analyzer Documentation - https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/overview 
+9. SonarQube Documentation — https://docs.sonarsource.com/ 
+
+
+
+ДОДАТОК А
+Відеозапис
+Відеозапис презентації практичної роботи: https://youtu.be/jkjFpLMAoLo
+
+Хронологічний опис відеозапису:
+0:00 — Вступ та тема. 
+0:20 — Важливість правил оформлення коду. 
+0:50 — Структура коду. 
+1:30 — Форматування коду - Частина 1. 
+2:00 — Форматування коду - Частина 2. 
+3:25 — Іменування - Частина 1. 
+4:30 — Іменування - Частина 2. 
+5:30 — Іменування Unity-об'єктів. 
+6:10 — Коментарі та документування. 
+8:00 — SOLID принципи. 
+8:10 — Sigle Responsibility Principle. 8:30 — Open/Closed Principle. 
+8:50 — Liskov Substitution Principle. 
+9:25 — Interface Segregation Principle. 
+9:50 — Dependency Inversion Principle. 
+10:15 — Конвенція стилю кодування. 
+11:10 — Тестування коду (TDD). 
+12:30 — Інструменти автоматизації. 
+13:00 — Висновок.
+
+
+
+ДОДАТОК Б
+Слайди з презентації
+
+Рисунок Б.1 – Вступ
+
+
+Рисунок Б.2 – Важливість правил оформлення коду
+
+
+Рисунок Б.3 – Структура коду
+
+
+Рисунок Б.4 – Форматування коду - Частина 1
+
+
+Рисунок Б.5 – Форматування коду - Частина 2
+
+
+Рисунок Б.6 – Іменування - Частина 1
+
+
+Рисунок Б.7 – Іменування - Частина 2
+
+
+Рисунок Б.8 – Іменування Unity-об’єктів
+
+
+Рисунок Б.9 – Коментарі та документування
+
+
+Рисунок Б.10 – SOLID принципи
+
+
+Рисунок Б.11 – Single Responsibility Principle
+
+
+Рисунок Б.12 – Open/Closed Principle
+
+
+Рисунок Б.13 – Liskov Subtitution Principle
+
+
+Рисунок Б.14 – Interface Segregation Principle
+
+
+Рисунок Б.15 – Dependency Inversion Principle
+
+
+Рисунок Б.16 – Конвенція стилю кодування
+
+
+Рисунок Б.17 – Тестування коду (TDD)
+
+
+Рисунок Б.18 – Інструменти автоматизації
+
+
+Рисунок Б.19 – Висновок
+
+
+Рисунок Б.20 – Використанні джерела
+
+2
+
 
