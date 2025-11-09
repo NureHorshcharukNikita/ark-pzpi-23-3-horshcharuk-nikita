@@ -1,1 +1,495 @@
+﻿Міністерство освіти і науки України 
+Харківський національний університет радіоелектроніки 
+
+
+Кафедра програмної інженерії
+ 
+
+
+Звіт
+з практичної роботи №2
+з дисципліни «Аналіз та рефакторинг коду»
+
+
+
+
+
+
+Виконав:                                                           	     Перевірив:
+ст. гр. ПЗПІ-23-3                                    	       	     ст. викл. Сокорчук І. П.
+Горщарук Н. С.
+
+
+
+
+
+
+
+Харків 2025
+1 ІСТОРІЯ ЗМІН
+№ДатаВерсія звітуОпис змін та виправлень108.11.20250.1Оформлено повністю текстовий звіт209.11.20250.2Додано посилання на відео та скриншоти слайдів у додаток
+
+2 ЗАВДАННЯ
+     Згідно з методичними вказівками, необхідно:
+1. Ознайомитись із теоретичними основами рефакторингу коду та принципами покращення структури програм без зміни їх функціональності.
+2. Обрати три методи рефакторингу з книги Мартіна Фаулера «Refactoring. Improving the Design of Existing Code»;
+3. Навести приклади власного коду (з курсових/лабораторних/проєктів), що потребують покращення, та продемонструвати застосування кожного методу;
+4. Для кожного методу надати: 
+* опис проблеми;
+* код до рефакторингу;
+* пояснення вибору методу;
+* код після рефакторингу;
+* переваги отриманого рішення;
+5. Підготувати звіт і презентацію результатів роботи.
+     У цьому звіті розглянуто методи: Extract Method, Rename Method, Simplify Conditional Expression.
+     
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+3.1  Рефакторинг в ігрових проєктах
+     Рефакторинг — це процес покращення внутрішньої структури програмного коду без зміни його зовнішньої поведінки. Його головна мета — підвищити якість проєкту: зробити код більш читабельним, підтримуваним, масштабованим і стабільним. 
+     У розробці ігор (GameDev) такі покращення особливо важливі, оскільки ігрова логіка постійно змінюється, а код швидко розростається. У процесі активної розробки накопичуються «запахи коду» — типові симптоми неякісної архітектури: надмірно великі методи Update, дублювання умов, неінформативні назви, складні вкладені if/else, порушення принципів SOLID тощо. 
+     Такі проблеми ускладнюють налагодження, інтеграцію нових механік, командну співпрацю та використання інструментів профілювання й тестування. Тому систематичний рефакторинг у GameDev дозволяє підтримувати чистоту проєкту, знижує технічний борг і підвищує ефективність роботи всієї команди, не змінюючи поведінки гри для користувача.
+3.2  Основні методи рефакторингу
+3.3.1 Extract Method (Виділення методу)
+1. Опис проблеми:
+* Симптоми: довгий метод з мішаниною відповідальностей, дублювання логіки в Update, складність покриття тестами, важко змінювати частини поведінки незалежно.
+* Наслідки: зниження читабельності, ризик побічних ефектів при правках, складність профілювання вузьких місць.
+* Чому Extract Method: дозволяє виділити логічно цілісний фрагмент у окремий метод, знизити розмір «бога-методу», спростити тестування й повторне використання.
+2. Код до рефакторингу в додатку Б.1.
+3. Пояснення обраного методу
+Виділяємо підзадачі: читання вводу, перевірка приземлення, обробка стрибка, пасивна регенерація, переміщення — кожну в окремий метод.
+4. Код після рефакторингу в додатку Б.2.
+5. Переваги
+* Зменшена когнітивна складність Update, поліпшена читабельність.
+* Легше тестувати/профілювати окремі частини.
+* Зменшення шансів на побічні ефекти при змінах.
+* Краща узгодженість з SRP і структурою MonoBehaviour
+3.3.2 Rename Method (Перейменування Методу)
+1. Опис проблеми
+* Симптоми: невиразні/оманливі назви (DoInput, Check, Heal, MoveIt) не відображають намір, що спричиняє помилки використання.
+* Наслідки: витрати часу на читання реалізації, ризик неправильного виклику, зниження якості API всередині команди.
+* Чому Rename Method: робить намір явним, покращує автодоповнення/пошук, спрощує навігацію коду.
+2. Код до рефакторингу в додатку Б.2.
+3. Пояснення обраного методу 
+Перейменовуємо метод на назву, що описує результат і призначення.
+4. Код після рефакторингу в додатку Б.3.
+5. Переваги
+* Намір методу стає очевидним з підпису — менше потреби відкривати реалізацію.
+* Підвищується якість автодоповнення в IDE та пошуку по коду.
+* Зменшується ймовірність неправильного використання/копіювання.
+3.3.3 Simplify Conditional Expression (Спрощення Умовних Виразів)
+1. Опис проблеми
+* Симптоми: глибоко вкладені if/else, ланцюжки умов з дублюванням, зайві прапорці, перевірки у неправильному порядку.
+* Наслідки: складно читати й модифікувати логіку, важко покривати тестами крайові кейси, зростає кількість дефектів.
+* Чому Simplify Conditional Expression: застосовуємо «guard clauses», дострокові виходи, виокремлення предикатів, оператори об’єднання/null-коалесценції, тернарні вирази там, де це справді покращує зрозумілість
+2. Код до рефакторингу в додатку Б.3
+3. Пояснення обраного підходу
+* Вводимо guard clauses для null і невалідної ціни.
+* Виносимо обчислення знижки в окремий предикат/метод (композиція з Extract Method).
+* Використовуємо локальні функції/виразні назви.
+* Зменшуємо рівень вкладеності до 1–2.
+4. Код після рефакторингу в додатку Б.4
+5. Переваги
+* Мінімальна вкладеність, швидке відсіювання невалідних випадків.
+* Логіка знижок ізольована та може бути перевикористана/протестована.
+* Зменшено дублювання, підвищено читабельність і надійність.
+3.3 Порівняльний аналіз результатів
+     Після проведення рефакторингу відбулося суттєве покращення якості коду за кількома критеріями.
+     Розмір та складність методів значно зменшилися: замість довгих фрагментів із мішаниною завдань тепер код поділено на короткі, логічно завершені методи з чітко визначеною відповідальністю.
+     Читабельність коду також покращилася. Завдяки застосуванню методів Extract Method, Rename Method та використанню простих умов (Guard Clauses), код став більш зрозумілим і структурованим, без зайвої вкладеності та неоднозначних назв.
+     Тестованість програми підвищилася, оскільки тепер можна перевіряти роботу окремих методів або класів незалежно, не тестуючи всю систему цілком. Це спрощує процес відлагодження і прискорює пошук помилок.
+     Ризик появи дефектів знизився, адже логіка програми стала більш прозорою та локалізованою — усі операції чітко відокремлені, що зменшує ймовірність побічних ефектів.
+     Крім того, підвищилася можливість повторного використання коду. Виділені допоміжні методи та утилітарні класи можна легко застосовувати в інших частинах проєкту, що сприяє зменшенню дублювання та покращенню підтримуваності системи загалом.
+3.4 Інструменти для рефакторингу
+* JetBrains Rider / Visual Studio — автоматичне перейменування, виділення методів, аналіз складності.
+* Roslyn Analyzers / StyleCop — перевірка стилю, виявлення кодових запахів.
+* Unity Test Framework — автоматичні тести для перевірки поведінки до і після рефакторингу.
+* SonarLint / ReSharper — аналіз якості коду та рекомендації щодо оптимізації.
+3.5 Рекомендації до впровадження
+* Використовувати IDE-рефакторинги (Rename/Extract) замість ручних змін — це безпечніше (перейменування з урахуванням посилань/метаданих).
+* Дотримуватися єдиного стилю (.editorconfig, StyleCop) для команди.
+* Запровадити code review з чек-листом: довгі методи, вкладені if, невлучні назви.
+* Перекривати критичну ігрову логіку юнiт-тестами (Unity Test Framework) перед/після рефакторингу.
+* Фіксувати покращення метрик (кількість рядків у методі, цикломатична складність, покриття тестами).
+
+
+4 ВИСНОВКИ
+     Рефакторинг є невід’ємною частиною життєвого циклу програмного забезпечення. Він не змінює функціональність програми, але істотно підвищує її якість. Застосування методів Extract Method, Rename Method та Simplify Conditional Expression дозволяє:
+* знизити когнітивне навантаження на розробника;
+* покращити читабельність та підтримуваність коду;
+* локалізувати логіку і зменшити ризик дефектів;
+* підвищити командну ефективність та швидкість розробки. 
+     Поєднання систематичного рефакторингу з інструментами IDE, статичним аналізом і тестами є практичною основою якості коду ігор на Unity.
+
+
+
+5 ВИКОРИСТАНІ ДЖЕРЕЛА
+1. Fowler M. Refactoring: Improving the Design of Existing Code. 2nd ed., Addison-Wesley, 2018.
+2. Martin R.C. Clean Code: A Handbook of Agile Software Craftsmanship. Prentice Hall, 2008.
+3. Microsoft Docs — C# Coding Conventions - https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions
+4. Unity Documentation — Scripting API & Best Practices - https://unity.com/how-to
+5. Unity — C# Style Guide (Unity 6) та статті з форматування/неймінгу — https://unity.com/resources/c-sharp-style-guide-unity-6
+6. StyleCop Analyzers / Roslyn Analyzers — https://learn.microsoft.com/en-us/visualstudio/code-quality/roslyn-analyzers-overview?view=vs-2022
+7. JetBrains Rider / Visual Studio — вбудовані інструменти рефакторингу (Rename, Extract Method) - https://www.jetbrains.com/help/rider/Refactorings__Index.html 
+
+
+
+ДОДАТОК А
+Відеозапис
+Відеозапис презентації практичної роботи: https://youtu.be/aY2QHWjgQZs
+
+Хронологічний опис відеозапису:
+0:00 — Вступ та тема. 
+0:20 — Вступ до рефакторингу. 
+0:35 — Рефакторинг в ігрових проєктах. 
+1:10 — Extract Method - Виділення методу. 
+1:50 — Extract Method - Код до рефакторингу. 
+2:10 — Extract Method - Код після рефакторингу. 
+2:20 — Extract Method - Переваги. 
+2:40 — Rename Mathod - Перейменування методу. 
+3:40 — Rename Mathod - Код до рефакторингу. 
+3:50 — Rename Mathod - Код після рефакторингу. 
+4:20 — Rename Mathod - Переваги. 
+4:40 — Simplify Conditional Expression - Спрощення умов. 
+5:10 — Simplify Conditional Expression - Код до рефакторингу. 
+5:30 — Simplify Conditional Expression - Код після рефакторингу. 
+6:20 — Simplify Conditional Expression - Переваги. 
+6:40 — Повністю відрефакторений код. 
+7:00 — Інструменти для рефакторингу. 
+7:40 — Рекомендації до впровадження. 
+8:05 — Висновок.
+
+
+ДОДАТОК Б
+Рефакторинг коду класа PlayerController
+Б.1) До рефакторинга
+public class PlayerController : MonoBehaviour
+{
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float jumpImpulse = 5f;
+    [SerializeField] private float groundCheckDistance = 1.1f;
+    [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int regenIntervalFrames = 120;
+
+    private Rigidbody playerRigidbody;
+    private Vector3 movementInput;
+    private bool isGrounded;
+    private int currentHealth = 100;
+
+    public void Awake()
+    {
+        playerRigidbody = GetComponent<Rigidbody>();
+    }
+
+    public void Update()
+    {
+        // читання вводу
+        movementInput.x = Input.GetAxis("Horizontal");
+        movementInput.z = Input.GetAxis("Vertical");
+
+        // перевірка приземлення (raycast)
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundCheckDistance))
+        {
+            isGrounded = hit.collider.CompareTag("Ground");
+        }
+        else
+        {
+            isGrounded = false;
+        }
+
+        // стрибок
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+        {
+            playerRigidbody.AddForce(Vector3.up * jumpImpulse, ForceMode.Impulse);
+        }
+
+        // відновлення здоров’я
+        if (currentHealth < maxHealth)
+        {
+            if (Time.frameCount % regenIntervalFrames == 0)
+            {
+                currentHealth += 1;
+                if (currentHealth > maxHealth) currentHealth = maxHealth;
+            }
+        }
+
+        // переміщення
+        var movement = new Vector3(movementInput.x, 0, movementInput.z) * moveSpeed;
+        playerRigidbody.velocity = new Vector3(movement.x, playerRigidbody.velocity.y, movement.z);
+    }
+}
+
+Б.2) Після рефакторинга методом Extract Method
+public class PlayerController : MonoBehaviour
+{
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float jumpImpulse = 5f;
+    [SerializeField] private float groundCheckDistance = 1.1f;
+    [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int regenIntervalFrames = 120;
+
+    private Rigidbody playerRigidbody;
+    private Vector3 movementInput;
+    private bool isGrounded;
+    private int currentHealth = 100;
+
+    public void Awake()
+    {
+        playerRigidbody = GetComponent<Rigidbody>();
+    }
+
+    public void Update()
+    {
+        DoInput();
+        Check();
+        DoJump();
+        Heal();
+        MoveIt();
+    }
+
+    private void DoInput()
+    {
+        movementInput.x = Input.GetAxis("Horizontal");
+        movementInput.z = Input.GetAxis("Vertical");
+    }
+
+    private void Check()
+    {
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundCheckDistance))
+            isGrounded = hit.collider.CompareTag("Ground");
+        else
+            isGrounded = false;
+    }
+
+    private void DoJump()
+    {
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+            playerRigidbody.AddForce(Vector3.up * jumpImpulse, ForceMode.Impulse);
+    }
+
+    private void Heal()
+    {
+        if (currentHealth < maxHealth)
+        {
+            if (Time.frameCount % regenIntervalFrames == 0)
+            {
+                currentHealth++;
+                if (currentHealth > maxHealth) currentHealth = maxHealth;
+            }
+        }
+    }
+
+    private void MoveIt()
+    {
+        var movement = new Vector3(movementInput.x, 0, movementInput.z) * moveSpeed;
+        playerRigidbody.velocity = new Vector3(movement.x, playerRigidbody.velocity.y, movement.z);
+    }
+}
+
+Б.3) Після рефакторинга методом Rename Method
+public class PlayerController : MonoBehaviour
+{
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float jumpImpulse = 5f;
+    [SerializeField] private float groundCheckDistance = 1.1f;
+    [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int regenIntervalFrames = 120;
+
+    private Rigidbody playerRigidbody;
+    private Vector3 movementInput;
+    private bool isGrounded;
+    private int currentHealth = 100;
+
+    public void Awake()
+    {
+        playerRigidbody = GetComponent<Rigidbody>();
+    }
+
+    public void Update()
+    {
+        ReadMovementInput();
+        UpdateGroundStatus();
+        HandleJump();
+        RegenerateHealth();
+        ApplyMovement();
+    }
+
+    private void ReadMovementInput()
+    {
+        movementInput.x = Input.GetAxis("Horizontal");
+        movementInput.z = Input.GetAxis("Vertical");
+    }
+
+    private void UpdateGroundStatus()
+    {
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundCheckDistance))
+            isGrounded = hit.collider.CompareTag("Ground");
+        else
+            isGrounded = false;
+    }
+
+    private void HandleJump()
+    {
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+            playerRigidbody.AddForce(Vector3.up * jumpImpulse, ForceMode.Impulse);
+    }
+
+    private void RegenerateHealth()
+    {
+        if (currentHealth < maxHealth)
+        {
+            if (Time.frameCount % regenIntervalFrames == 0)
+            {
+                currentHealth++;
+                if (currentHealth > maxHealth) currentHealth = maxHealth;
+            }
+        }
+    }
+
+    private void ApplyMovement()
+    {
+        var movement = new Vector3(movementInput.x, 0, movementInput.z) * moveSpeed;
+        playerRigidbody.velocity = new Vector3(movement.x, playerRigidbody.velocity.y, movement.z);
+    }
+}
+
+Б.4) Після рефакторинга методом Simplify Conditional Expression
+public class PlayerController : MonoBehaviour
+{
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float jumpImpulse = 5f;
+    [SerializeField] private float groundCheckDistance = 1.1f;
+    [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int regenIntervalFrames = 120;
+
+    private Rigidbody playerRigidbody;
+    private Vector3 movementInput;
+    private bool isGrounded;
+    private int currentHealth = 100;
+
+    public void Awake()
+    {
+        playerRigidbody = GetComponent<Rigidbody>();
+    }
+
+    public void Update()
+    {
+        ReadMovementInput();
+        UpdateGroundStatus();
+        HandleJump();
+        RegenerateHealth();
+        ApplyMovement();
+    }
+
+    private void ReadMovementInput()
+    {
+        movementInput.x = Input.GetAxis("Horizontal");
+        movementInput.z = Input.GetAxis("Vertical");
+    }
+
+    private void UpdateGroundStatus()
+    {
+        isGrounded =
+            Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundCheckDistance)
+            && hit.collider.CompareTag("Ground");
+    }
+
+    private void HandleJump()
+    {
+        if (!isGrounded) return;
+        if (!Input.GetKeyDown(KeyCode.Space)) return;
+
+        playerRigidbody.AddForce(Vector3.up * jumpImpulse, ForceMode.Impulse);
+    }
+
+    private void RegenerateHealth()
+    {
+        if (IsHealthFull()) return;
+        if (!IsRegenFrame()) return;
+
+        currentHealth = Mathf.Min(currentHealth + 1, maxHealth);
+    }
+
+    private bool IsHealthFull()
+    {
+        return currentHealth >= maxHealth;
+    }
+
+    private bool IsRegenFrame()
+    {
+        return Time.frameCount % regenIntervalFrames == 0;
+    }
+
+    private void ApplyMovement()
+    {
+        var move = new Vector3(movementInput.x, 0, movementInput.z) * moveSpeed;
+        playerRigidbody.velocity = new Vector3(move.x, playerRigidbody.velocity.y, move.z);
+    }
+}
+
+
+
+ДОДАТОК В
+Слайди з презентації
+
+Рисунок В.1 – Вступ
+
+
+Рисунок В.2 – Вступ до рефакторингу
+
+
+Рисунок В.3 – Рефакторинг в ігрових проєктах
+
+
+Рисунок В.4 – Extract Method - Виділення методу
+
+
+Рисунок В.5 – Extract Method - Код до рефакторингу
+
+
+Рисунок В.6 – Extract Method - Код після рефакторингу
+
+
+Рисунок В.7 – Extract Method - Переваги
+
+
+Рисунок В.8 – Rename Method - Перейменування методу
+
+
+Рисунок В.9 – Rename Method - Код до рефакторингу
+
+
+Рисунок В.10 – Rename Method - Код після рефакторингу
+
+
+Рисунок В.11 – Rename Method - Переваги
+
+
+Рисунок В.12 – Simplify Conditional Expression - Спрощення умов
+
+
+Рисунок В.13 – Simplify Conditional Expression - Код до рефакторингу
+
+
+Рисунок В.14 – Simplify Conditional Expression - Код після рефакторингу
+
+
+Рисунок В.15 – Simplify Conditional Expression - Переваги
+
+
+Рисунок В.16 – Повністю відрефакторений код
+
+
+Рисунок В.17 – Інструменти для рефакторингу
+
+
+Рисунок В.18 – Рекомендації до впровадження
+
+
+Рисунок В.19 – Висновок
+
+
+Рисунок В.20 – Список використаних джерел
+2
+
 
