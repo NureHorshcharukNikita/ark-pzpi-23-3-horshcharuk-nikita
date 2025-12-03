@@ -1,1 +1,633 @@
+﻿Міністерство освіти і науки України 
+Харківський національний університет радіоелектроніки 
+
+
+Кафедра програмної інженерії
+ 
+
+
+Звіт
+з лабораторної роботи №3
+з дисципліни «Аналіз та рефакторинг коду»
+
+
+
+
+
+
+Виконав:                                                           	     Перевірив:
+ст. гр. ПЗПІ-23-3                                    	       	     ст. викл. Сокорчук І. П.
+Горщарук Н. С.
+
+
+
+
+
+
+
+Харків 2025
+1 ІСТОРІЯ ЗМІН
+№ДатаВерсія звітуОпис змін та виправлень127.11.20250.1Оформлено повністю текстовий звіт230.11.20250.2Додано посилання на відео
+
+2 ЗАВДАННЯ
+     Згідно з методичними вказівками до лабораторної роботи №3 необхідно:
+1. Розробити бізнес-логіку серверної частини системи Elevate:
+* спроєктувати алгоритми нарахування командних балів, визначення рівнів та видачі бейджів;
+* реалізувати обробку запитів від клієнтів через шар сервісів;
+* забезпечити дотримання бізнес-правил для ролей User, Manager, Admin та IoT-пристроїв.
+2. Розробити функції адміністрування серверної частини:
+* управління користувачами та їх ролями;
+* управління командами, рівнями, бейджами та типами подій;
+* управління IoT-пристроями;
+* моніторинг активності системи та доступ до логів.
+3. Створити програмну реалізацію бізнес-логіки та функцій адміністрування:
+* реалізувати сервіси бізнес-логіки під .NET / EF Core поверх уже створених сутностей і БД (ЛР2);
+* реалізувати контролери адміністратора та менеджера з обмеженням доступу за ролями (JWT + Authorize).
+4. Провести тестування:
+* перевірити виконання основних бізнес-процесів (створення ActionEvents, оновлення балів, рівнів, бейджів);
+* протестувати функції адміністрування (блокування користувача, підвищення ролей, реєстрація IoT-пристрою);
+* задокументувати тестові сценарії.
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+1. Опис інженерних рішень та реалізації
+1.1. Архітектурні рішення бізнес-логіки та адміністрування
+     Серверна частина системи Elevate побудована за принципами багатошарової (layered) архітектури:
+1. Presentation / API layer (ASP.NET Core контролери)
+* Приймають HTTP-запити (REST API) від веб-, мобільного та IoT-клієнтів.
+* Виконують:
+валідацію вхідних даних;
+авторизацію за ролями ([Authorize], [Authorize(Roles = "...")]);
+виклики сервісів бізнес-логіки.
+   Організація контролерів: Контролери згруповані в папки за функціональністю:
+* Admin/ — адміністративні контролери: AdminUsersController, AdminTeamsController, AdminDevicesController, AdminLevelsController, AdminBadgesController, AdminActionTypesController, AdminAuditController
+* Teams/ — контролери команд: TeamsController (з методом GetLeaderboard), TeamActionsController, TeamGamificationController
+* Users/ — контролери користувачів: UsersController, UsersProfileController
+* Actions/ — контролери дій: ActionsController
+* IoT/ — IoT контролери: IoTController
+* Analytics/ — контролери аналітики: AnalyticsController
+* Auth/ — контролери авторизації: AuthController
+     Така організація спрощує навігацію та підтримку коду, дотримуючись принципу Single Responsibility.
+2. Business Logic layer (сервіси)
+* Інкапсулює правила домену, щоб вони не були "розмазані" по контролерах.
+* Основні сервіси:
+ActionEventService — створення подій, нарахування балів, оновлення рівнів, видача бейджів
+GamificationService — перевірка умов бейджів та їх видача
+LeaderboardService — формування командних рейтингів
+UserProfileService — агрегація профілю користувача по всіх командах
+IotService — обробка сканування/ідентифікації користувача з IoT-пристроїв
+AdminUserService, AdminTeamService, AdminDeviceService, GamificationAdminService, AdminAuditService — адміністративні функції
+     Сервіси працюють з кількома сутностями одночасно та використовують ORM тільки через ElevateDbContext.
+3. Data Access layer (ORM / EF Core)
+* ElevateDbContext + набори DbSet<T> для сутностей:
+* Users, Teams, TeamMembers, TeamLevels, TeamBadges, UserTeamBadges, ActionTypes, ActionEvents, Devices, DeviceScans
+* EF Core відповідає за:
+* роботу з SQL Server
+* відстеження змін
+* виконання LINQ-запитів
+* підтримку цілісності даних відповідно до схем БД з ЛР2
+Такий поділ дозволяє:
+* змінювати бізнес-правила без переписування контролерів
+* тестувати бізнес-логіку окремо (unit/інтеграційні тести сервісів)
+* у майбутньому масштабувати систему (наприклад, винести IoT-логіку в окремий сервіс)
+2. Вибір технологій та інструментів
+Для серверної частини були обрані такі технології:
+* C# + ASP.NET Core
+* Підтримка REST API "з коробки"
+* зручна робота з middleware (автентифікація, авторизація)
+* хороші інструменти для документування API (Swagger)
+* Entity Framework Core (ORM)
+* Автоматичне відображення C#-сутностей на таблиці SQL Server
+* підтримка міграцій та Fluent API
+* зручно реалізовувати бізнес-логіку, яка працює з кількома таблицями
+* Microsoft SQL Server
+* Реляційна БД, вже спроєктована в ЛР2
+* підтримка складних зв'язків, індексів, зовнішніх ключів
+* JWT (JSON Web Token) для авторизації
+* дає змогу захищати ендпоінти ролями (User, Manager, Admin)
+* використовується як для фронтенду, так і для IoT-клієнтів (для пристроїв окремо застосовується DeviceKey)
+3. Фрагменти коду бізнес-логіки
+3.1. Нарахування балів, рівнів та бейджів (ActionEventService)
+     Центральна бізнес-операція — створити подію (ActionEvent) і перерахувати стан користувача у команді: бали, рівень, бейджі.
+Інтерфейс сервісу:
+public interface IActionEventService
+{
+    Task<ActionEventDto> CreateAsync(
+        CreateActionEventDto dto,
+        int? authenticatedUserId,
+        CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<ActionEventDto>> GetAsync(
+        int? userId,
+        int? teamId,
+        CancellationToken cancellationToken);
+    Task<ActionEvent?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken);
+}
+Суть реалізації (фрагмент):
+public class ActionEventService : IActionEventService
+{
+    private readonly ElevateDbContext _dbContext;
+    private readonly IGamificationService _gamificationService;
+    public ActionEventService(
+        ElevateDbContext dbContext,
+        IGamificationService gamificationService)
+    {
+        _dbContext = dbContext;
+        _gamificationService = gamificationService;
+    }
+    public async Task<ActionEventDto> CreateAsync(
+        CreateActionEventDto dto,
+        int? authenticatedUserId,
+        CancellationToken cancellationToken)
+    {
+        // 1) Визначення userId (з DTO або з автентифікованого користувача)
+        var userId = dto.UserId != 0 ? dto.UserId : 
+                     authenticatedUserId ?? throw new InvalidOperationException("User ID is required");
+        // 2) Перевірка типу події
+        var actionType = await _dbContext.ActionTypes
+            .FirstOrDefaultAsync(at => at.ActionTypeID == dto.ActionTypeId
+                                    && at.TeamID == dto.TeamId
+                                    && at.IsActive, cancellationToken)
+            ?? throw new InvalidOperationException("Invalid action type for this team");
+        // 3) Перевірка участі користувача в команді
+        var member = await _dbContext.TeamMembers
+            .Include(tm => tm.TeamLevel)
+            .FirstOrDefaultAsync(tm => tm.TeamID == dto.TeamId && tm.UserID == userId, cancellationToken)
+            ?? throw new InvalidOperationException("User is not a member of the team");
+        // 4) Створення події
+        var points = dto.Points ?? actionType.DefaultPoints;
+        var actionEvent = new ActionEvent
+        {
+            UserID = userId,
+            TeamID = dto.TeamId,
+            ActionTypeID = dto.ActionTypeId,
+            SourceType = dto.SourceType,
+            SourceUserID = dto.SourceUserId,
+            Comment = dto.Comment,
+            PointsAwarded = points,
+            OccurredAt = dto.OccurredAt ?? DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            IsValid = true
+        };
+        _dbContext.ActionEvents.Add(actionEvent);
+        // 5) Оновлення балів
+        member.TeamPoints += points;
+        // 6) Перерахунок рівня
+        var newLevel = await _dbContext.TeamLevels
+            .Where(l => l.TeamID == dto.TeamId && member.TeamPoints >= l.RequiredPoints)
+            .OrderByDescending(l => l.RequiredPoints)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (newLevel != null && newLevel.TeamLevelID != member.TeamLevelID)
+        {
+            member.TeamLevelID = newLevel.TeamLevelID;
+        }
+        // 7) Збереження змін (атомарна операція)
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        // 8) Перевірка умов бейджів та видача нових (окремий виклик після збереження)
+        var earnedBadges = await _gamificationService.EvaluateBadgesAsync(
+            dto.TeamId,
+            userId,
+            cancellationToken);
+        var membershipLevelName = newLevel?.Name ?? member.TeamLevel?.Name;
+        // 9) Формування та повернення DTO
+        return ActionEventMappings.ToActionEventDto(
+            actionEvent,
+            member,
+            membershipLevelName,
+            earnedBadges);
+    }
+}
+Ключові інженерні рішення:
+* Логіка не розміщується в контролері — вона повністю в сервісі
+* Операція CreateAsync атомарна в межах одного SaveChangesAsync 
+* додається запис у ActionEvents
+* оновлюються бали та рівень
+* Умови бейджів винесені в окремий сервіс GamificationService, що дозволяє розширювати типи умов (ConditionType) та перевикористовувати логіку
+* Контролер TeamActionsController перетворює ActionEventDto в ActionEventResultDto для зручності клієнта
+3.2. Формування командних рейтингів (LeaderboardService)
+     Лідерборд — це "зріз" стану команди: хто в топі, скільки балів, який рівень.
+     Фрагмент сервісу:
+public class LeaderboardService : ILeaderboardService
+{
+    private readonly ElevateDbContext _db;
+    public LeaderboardService(ElevateDbContext db)
+    {
+        _db = db;
+    }
+    public async Task<IReadOnlyList<TeamLeaderboardEntryDto>> GetTeamLeaderboardAsync(
+        int teamId, int? topN = null, CancellationToken ct = default)
+    {
+        var query = _db.TeamMembers
+            .AsNoTracking()
+            .Include(tm => tm.User)
+            .Include(tm => tm.TeamLevel)
+            .Where(tm => tm.TeamID == teamId)
+            .OrderByDescending(tm => tm.TeamPoints);
+        if (topN.HasValue)
+            query = query.Take(topN.Value);
+        var members = await query.ToListAsync(ct);
+        int position = 1;
+        return members.Select(tm => new TeamLeaderboardEntryDto
+        {
+            Position = position++,
+            UserId = tm.UserID,
+            FullName = $"{tm.User.FirstName} {tm.User.LastName}",
+            TeamPoints = tm.TeamPoints,
+            TeamLevelName = tm.TeamLevel?.Name
+        }).ToList();
+    }
+}
+     Ідея: бізнес-логіка не лише повертає "сирі дані", а одразу готує DTO з позиціями користувачів — це спрощує клієнтський код (фронтенд просто відображає готовий рейтинг).
+3.3. IoT-сценарій ідентифікації користувача (IotService)
+     Для взаємодії з фізичними пристроями реалізовано сервіс IotService, який:
+* перевіряє валідність DeviceKey
+* завантажує користувача за його ідентифікатором (userId), який надсилає IoT-клієнт
+* перевіряє, що користувач входить до команди, до якої прив'язаний пристрій
+* логує факт взаємодії (DeviceScans)
+* повертає короткий профіль користувача в команді
+Фрагмент сервісу:
+public class IotService : IIotService
+{
+    private readonly ElevateDbContext _db;
+    public IotService(ElevateDbContext db)
+    {
+        _db = db;
+    }
+    public async Task<IotScanResultDto> ProcessScanAsync(
+        string deviceKey, int userId, CancellationToken ct = default)
+    {
+        // 1) Перевірка пристрою
+        var device = await _db.Devices
+            .FirstOrDefaultAsync(d => d.DeviceKey == deviceKey && d.IsActive, ct)
+            ?? throw new InvalidOperationException("Device not found or inactive");
+        // 2) Завантаження користувача за userId
+        var user = await _db.Users
+            .FirstOrDefaultAsync(u => u.UserID == userId, ct)
+            ?? throw new InvalidOperationException("User not found");
+        // 3) Перевірка, що користувач є учасником команди пристрою
+        var member = await _db.TeamMembers
+            .Include(tm => tm.TeamLevel)
+            .FirstOrDefaultAsync(tm => tm.TeamID == device.TeamID && tm.UserID == user.UserID, ct)
+            ?? throw new InvalidOperationException("User is not a member of device team");
+        // 4) Логування взаємодії
+        _db.DeviceScans.Add(new DeviceScan
+        {
+            DeviceID = device.DeviceID,
+            TeamID = device.TeamID,
+            UserID = user.UserID,
+            ScannedAt = DateTime.UtcNow
+        });
+        device.LastSeenAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        // 5) Вибірка останніх бейджів користувача в цій команді
+        var recentBadges = await _db.UserTeamBadges
+            .AsNoTracking()
+            .Include(utb => utb.TeamBadge)
+            .Where(utb => utb.TeamID == device.TeamID && utb.UserID == user.UserID)
+            .OrderByDescending(utb => utb.AwardedAt)
+            .Take(5)
+            .Select(utb => utb.TeamBadge.Name)
+            .ToListAsync(ct);
+        // 6) Формування відповіді для IoT-клієнта
+        return new IotScanResultDto
+        {
+            UserId = user.UserID,
+            TeamId = device.TeamID,
+            FullName = $"{user.FirstName} {user.LastName}",
+            TeamPoints = member.TeamPoints,
+            TeamLevelName = member.TeamLevel?.Name,
+            RecentBadges = recentBadges
+        };
+    }
+}
+IoT-запит може виглядати так:
+{
+  "deviceKey": "DEVICE-123-KEY",
+  "userId": 5
+}
+4. Фрагменти коду функцій адміністрування
+4.1. Управління користувачами та ролями (AdminUserService)
+     Адміністратор може:
+* переглядати список користувачів
+* отримувати деталі одного користувача
+* змінювати системну роль (User, Manager, Admin)
+* блокувати/розблоковувати користувача (IsActive)
+  Інтерфейс сервісу:
+public interface IAdminUserService
+{
+    Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default);
+    Task<User?> GetByIdAsync(int userId, CancellationToken ct = default);
+    Task SetRoleAsync(int userId, string role, CancellationToken ct = default);
+    Task SetActiveAsync(int userId, bool isActive, CancellationToken ct = default);
+}
+Контролер (фрагмент):
+[ApiController]
+[Route("api/admin/users")]
+[Authorize(Roles = "Admin")]
+public class AdminUsersController : ControllerBase
+{
+    private readonly IAdminUserService _service;
+    public AdminUsersController(IAdminUserService service)
+    {
+        _service = service;
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetAll(CancellationToken ct)
+    {
+        var users = await _service.GetAllAsync(ct);
+        return Ok(users.Select(u => new
+        {
+            u.UserID,
+            u.Login,
+            u.Email,
+            u.Role,
+            u.IsActive,
+            u.CreatedAt,
+            u.LastLoginAt
+        }));
+    }
+    [HttpPost("{id:int}/role")]
+    public async Task<IActionResult> SetRole(int id, [FromBody] SetRoleRequest request, CancellationToken ct)
+    {
+        await _service.SetRoleAsync(id, request.Role, ct);
+        return NoContent();
+    }
+    [HttpPost("{id:int}/block")]
+    public async Task<IActionResult> Block(int id, CancellationToken ct)
+    {
+        await _service.SetActiveAsync(id, false, ct);
+        return NoContent();
+    }
+    [HttpPost("{id:int}/unblock")]
+    public async Task<IActionResult> Unblock(int id, CancellationToken ct)
+    {
+        await _service.SetActiveAsync(id, true, ct);
+        return NoContent();
+    }
+}
+4.2. Управління командами та учасниками (AdminTeamService)
+Адміністратор може:
+* створювати, редагувати, видаляти команди
+* додавати користувачів до команд
+* змінювати їхню роль у конкретній команді (TeamRole)
+Фрагмент сервісу:
+public class AdminTeamService : IAdminTeamService
+{
+    private readonly ElevateDbContext _db;
+    public AdminTeamService(ElevateDbContext db)
+    {
+        _db = db;
+    }
+    public async Task<Team> CreateTeamAsync(string name, string? description, int? managerUserId, CancellationToken ct = default)
+    {
+        var team = new Team
+        {
+            Name = name,
+            Description = description,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.Teams.Add(team);
+        await _db.SaveChangesAsync(ct);
+        if (managerUserId.HasValue)
+        {
+            _db.TeamMembers.Add(new TeamMember
+            {
+                TeamID = team.TeamID,
+                UserID = managerUserId.Value,
+                TeamRole = "Manager",
+                JoinedAt = DateTime.UtcNow,
+                TeamPoints = 0
+            });
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserID == managerUserId.Value, ct);
+            if (user != null && user.Role == "User")
+                user.Role = "Manager";
+            await _db.SaveChangesAsync(ct);
+        }
+        return team;
+    }
+    // UpdateTeamAsync, DeleteTeamAsync, AddMemberAsync, RemoveMemberAsync, ChangeMemberRoleAsync ...
+}
+4.3. Управління IoT-пристроями (AdminDeviceService)
+     Адміністратор реєструє пристрої, прив'язує їх до команд, може їх активувати/деактивувати.
+     Фрагмент:
+public class AdminDeviceService : IAdminDeviceService
+{
+    private readonly ElevateDbContext _db;
+    public AdminDeviceService(ElevateDbContext db)
+    {
+        _db = db;
+    }
+    public async Task<Device> CreateAsync(string name, int teamId, string? location, CancellationToken ct = default)
+    {
+        var device = new Device
+        {
+            Name = name,
+            TeamID = teamId,
+            Location = location,
+            DeviceKey = Guid.NewGuid().ToString("N"),
+            IsActive = true,
+            LastSeenAt = null
+        };
+        _db.Devices.Add(device);
+        await _db.SaveChangesAsync(ct);
+        return device;
+    }
+    public async Task SetActiveAsync(int deviceId, bool isActive, CancellationToken ct = default)
+    {
+        var device = await _db.Devices.FirstOrDefaultAsync(d => d.DeviceID == deviceId, ct)
+                      ?? throw new InvalidOperationException("Device not found");
+        device.IsActive = isActive;
+        await _db.SaveChangesAsync(ct);
+    }
+}
+4.4. Управління гейміфікаційними параметрами (GamificationAdminService)
+     Адміністратор може налаштовувати параметри гейміфікації для команд. Для кращої організації коду та дотримання принципу Single Responsibility, функціональність розділена на три окремі контролери:
+* AdminLevelsController (/api/admin/levels) — управління рівнями команд
+* AdminBadgesController (/api/admin/badges) — управління бейджами команд
+* AdminActionTypesController (/api/admin/action-types) — управління типами дій
+   Приклади ендпоінтів:
+* GET /api/admin/levels/teams/{teamId} — отримати рівні команди
+* POST /api/admin/levels/teams/{teamId} — створити рівень
+* PUT /api/admin/levels/{id} — оновити рівень
+* DELETE /api/admin/levels/{id} — видалити рівень
+   Аналогічно для бейджів та типів дій.
+4.5. Моніторинг та аудит (AdminAuditService)
+Для прозорості роботи системи реалізовано read-only-журнали:
+* GET /api/admin/events — перегляд подій (ActionEvents) з фільтрами по команді, користувачу, типу події, періоду
+* GET /api/admin/device-scans — перегляд сканувань IoT-пристроїв (DeviceScans)
+     Сервіс AdminAuditService будує запити до БД, які дозволяють адміністратору бачити активність в системі та виявляти аномалії.
+5. UML діаграма діяльності (Activity)
+     Діаграма діяльності "Створення командної події та нарахування балів" демонструє послідовність дій у бізнес-процесі:
+1. Клієнт формує дані події (teamId, actionTypeId, userId, comment, sourceType, occurredAt) та надсилає POST /api/teams/{teamId}/actions з JWT-токеном.
+2. API-контролер TeamActionsController приймає HTTP-запит, перевіряє авторизацію (JWT) та парсить тіло запиту (CreateActionEventRequest).
+3. Контролер створює CreateActionEventDto з даних запиту та викликає ActionEventService.CreateAsync(dto, authenticatedUserId, cancellationToken).
+4. Сервіс визначає userId з dto.UserId або authenticatedUserId (якщо dto.UserId не вказано). Якщо userId не визначено — кидається помилка "User ID is required", процес завершується.
+5. Сервіс завантажує ActionType (за teamId, actionTypeId, IsActive=true).
+6. Перевірка: якщо ActionType не знайдено — кидається помилка "Invalid action type for this team", контролер формує відповідь 400 Bad Request, процес завершується.
+7. Сервіс завантажує TeamMember (за teamId, userId) з включенням TeamLevel.
+8. Перевірка: якщо TeamMember не знайдено — кидається помилка "User is not a member of the team", контролер формує відповідь 400 Bad Request, процес завершується.
+9. Сервіс обчислює points = dto.Points ?? actionType.DefaultPoints (може бути перевизначено в DTO).
+10. Сервіс створює ActionEvent (заповнює поля, додає до контексту).
+11. Сервіс оновлює TeamMember.TeamPoints += points.
+12. Сервіс знаходить новий TeamLevel за сумою балів (найвищий рівень, де RequiredPoints <= TeamPoints).
+13. Перевірка: якщо новий рівень відрізняється від поточного — оновлюється TeamMember.TeamLevelID.
+14. Виконується SaveChangesAsync() в базі даних: зберігаються зміни в ActionEvents та TeamMembers (оновлення балів та рівня).
+15. Сервіс викликає GamificationService.EvaluateBadgesAsync(teamId, userId, cancellationToken) для перевірки умов командних бейджів.
+16. GamificationService завантажує TeamBadges для команди та наявні UserTeamBadges користувача.
+17. Для кожного TeamBadge перевіряється, чи користувач вже не має бейдж, перевіряється ConditionType/Value (наприклад, TotalPoints, ActionCount), при виконанні умови додається UserTeamBadge до контексту.
+18. Якщо знайдені нові бейджі, виконується SaveChangesAsync() в GamificationService для збереження нових UserTeamBadges.
+19. Сервіс формує ActionEventDto через ActionEventMappings.ToActionEventDto() з даними події, оновленими балами, рівнем та новими бейджами.
+20. Контролер перетворює ActionEventDto в ActionEventResultDto для зручності клієнта.
+21. API-контролер формує відповідь 201 Created з даними події та прогресом (ActionEventResultDto).
+22. Клієнт отримує відповідь та оновлює UI (бали, рівень, бейджі).
+     Діаграма показує потік дій з гілками для перевірки умов (визначення userId, наявність ActionType, членство в команді, зміна рівня) та обробкою помилок. Важливо, що перевірка бейджів виконується після збереження основних змін через окремий сервіс GamificationService, що дозволяє розширювати логіку нарахування бейджів незалежно.
+6. UML діаграма взаємодії (Interaction / Sequence)
+     Діаграма взаємодії "Створення командної події користувачем" показує обмін повідомленнями між компонентами під час виконання бізнес-логіки:
+1. Користувач обирає дію/тип події (натискає кнопку в UI).
+2. Web/Mobile Client надсилає HTTP POST /api/teams/{teamId}/actions з JWT-токеном у заголовку та тілом { userId, actionTypeId, sourceType, sourceUserId, comment, occurredAt }.
+3. Auth middleware (ASP.NET Core) перевіряє JWT (ідентифікація користувача). Якщо токен невалідний — повертає 401 Unauthorized, процес завершується.
+4. Auth middleware передає запит до TeamActionsController.
+5. Контролер валідує вхідні дані (перевірка обов'язкових полів) та парсить тіло запиту (CreateActionEventRequest).
+6. Контролер створює CreateActionEventDto з даних запиту та викликає ActionEventService.CreateAsync(dto, authenticatedUserId, cancellationToken).
+7. Сервіс визначає userId з dto.UserId або authenticatedUserId. Якщо userId не визначено — сервіс кидає InvalidOperationException("User ID is required"), контролер повертає 400 Bad Request, процес завершується.
+8. Сервіс завантажує ActionType через ElevateDbContext: виконується SQL-запит SELECT * FROM ActionTypes WHERE TeamID=@teamId AND ActionTypeID=@actionTypeId AND IsActive=1. Якщо ActionType не знайдено — сервіс кидає InvalidOperationException("Invalid action type for this team"), контролер повертає 400 Bad Request, процес завершується.
+9. Сервіс завантажує TeamMember через ElevateDbContext з включенням TeamLevel: виконується SQL-запит SELECT tm.*, tl.* FROM TeamMembers tm LEFT JOIN TeamLevels tl ON tm.TeamLevelID = tl.TeamLevelID WHERE tm.TeamID=@teamId AND tm.UserID=@userId. Якщо користувач не є членом команди — сервіс кидає InvalidOperationException("User is not a member of the team"), контролер повертає 400 Bad Request, процес завершується.
+10. Сервіс обчислює points = dto.Points ?? actionType.DefaultPoints (може бути перевизначено в DTO).
+11. Сервіс створює ActionEvent та додає його до контексту (INSERT в контекст).
+12. Сервіс оновлює TeamMember.TeamPoints += points.
+13. Сервіс завантажує рівні TeamLevels для команди через ElevateDbContext: виконується SQL-запит SELECT * FROM TeamLevels WHERE TeamID=@teamId AND RequiredPoints <= @teamPoints ORDER BY RequiredPoints DESC.
+14. Сервіс визначає новий рівень (найвищий, де RequiredPoints <= TeamPoints) та оновлює TeamMember.TeamLevelID (якщо рівень змінився).
+15. Сервіс викликає SaveChangesAsync(): ElevateDbContext виконує SQL-запити INSERT INTO ActionEvents (...) та UPDATE TeamMembers SET TeamPoints=@points, TeamLevelID=@levelId WHERE ....
+16. Сервіс викликає GamificationService.EvaluateBadgesAsync(teamId, userId, cancellationToken) для перевірки умов бейджів.
+17. GamificationService завантажує TeamBadges для команди через ElevateDbContext: виконується SQL-запит SELECT * FROM TeamBadges WHERE TeamID=@teamId.
+18. GamificationService завантажує наявні UserTeamBadges користувача: виконується SQL-запит SELECT * FROM UserTeamBadges WHERE TeamID=@teamId AND UserID=@userId.
+19. GamificationService для кожного TeamBadge перевіряє умову (ConditionType/Value) та при потребі додає UserTeamBadge до контексту.
+20. Якщо знайдені нові бейджі, GamificationService викликає SaveChangesAsync(): ElevateDbContext виконує SQL-запит INSERT INTO UserTeamBadges (...) VALUES (...) для нових бейджів.
+21. GamificationService повертає IReadOnlyCollection<UserTeamBadge> сервісу.
+22. Сервіс формує ActionEventDto через ActionEventMappings.ToActionEventDto() з даними події, оновленими балами, рівнем та новими бейджами.
+23. Сервіс повертає ActionEventDto контролеру.
+24. Контролер перетворює ActionEventDto в ActionEventResultDto для зручності клієнта.
+25. Контролер повертає HTTP 201 Created з даними події та прогресом (ActionEventResultDto) клієнту.
+26. Клієнт оновлює UI (бали, рівень, бейджі).
+     Діаграма показує взаємодію: User → Web/Mobile Client → Auth Middleware → TeamActionsController → ActionEventService → ElevateDbContext → SQL Server, а також виклик GamificationService → ElevateDbContext → SQL Server для перевірки бейджів після збереження основних змін. Включено обробку помилок та альтернативні сценарії.
+7. Тестування бізнес-логіки та функцій адміністрування
+     Тестування проводилося на двох рівнях:
+1. Інтеграційне тестування сервісів
+     Використовувався ElevateDbContext з InMemory-БД для перевірки, що:
+* створення події збільшує TeamPoints
+* рівень користувача оновлюється при досягненні порогу
+* при достатній кількості балів додається запис у UserTeamBadges
+* обробка IoT-запиту оновлює DeviceScans та Devices.LastSeenAt і повертає коректний профіль
+2.  Ручне тестування через Swagger / Postman
+Основні сценарії:
+     Авторизація:
+* POST /api/auth/login — отримання JWT-токена
+Бізнес-логіка:
+* POST /api/teams/{teamId}/actions — створення події, перевірка відповіді (бали, рівень, бейджі)
+* GET /api/teams/{teamId}/leaderboard — перевірка актуальності рейтингу
+* GET /api/users/{userId}/teams-profile — перевірка профілю користувача в розрізі команд
+IoT-логіка (через userId):
+* POST /api/iot/scan — у тілі передаються deviceKey та userId; перевіряється:
+* що у таблиці DeviceScans з'являється новий запис
+* що оновлюється Devices.LastSeenAt
+* що відповідь містить ім'я користувача, його бали, рівень та останні бейджі
+Адмінка:
+* GET /api/admin/users — перегляд користувачів
+* POST /api/admin/users/{id}/block / unblock — перевірка зміни IsActive
+* POST /api/admin/teams — створення команди з менеджером
+* POST /api/admin/teams/{id}/members — додавання учасника
+* POST /api/admin/levels/teams/{teamId} — створення рівня
+* POST /api/admin/badges/teams/{teamId} — створення бейджа
+* POST /api/admin/action-types/teams/{teamId} — створення типу дії
+* GET /api/admin/events та GET /api/admin/device-scans — перевірка журналів активності
+  Результати тестування показали, що:
+* бізнес-логіка (баланс, рівні, бейджі, рейтинги) працює відповідно до описаних правил
+* адміністративні функції коректно змінюють стан системи (ролі, активність, налаштування)
+* IoT-сценарій на основі userId коректно інтегрований із ядром системи та базою даних
+* організація контролерів у папки та винесення request-типів в окремі файли покращують підтримуваність коду
+
+
+4 ВИСНОВКИ
+     У межах лабораторної роботи №3 було розроблено та реалізовано шар бізнес-логіки та функції адміністрування серверної частини системи Elevate. Поверх уже спроєктованих у ЛР2 БД та REST API було:
+* сформульовано та імплементовано ключові бізнес-алгоритми: нарахування командних балів, перерахунок командних рівнів, автоматичну видачу командних бейджів;
+* виділено окремі сервіси бізнес-логіки (ActionEventService, AdminUserService тощо), що інкапсулюють роботу з кількома сутностями та забезпечують чисту архітектуру;
+* реалізовано функції адміністрування: управління користувачами та їх ролями, блокування облікових записів, керування командами та IoT-пристроями;
+* розроблено UML-діаграму діяльності для процесу нарахування балів та UML-діаграму взаємодії для сценарію адміністрування;
+* проведено тестування бізнес-логіки і адмін-функцій як через модульні тести, так і через Swagger / Postman, підтверджено коректну взаємодію з БД;
+* оновлено GitHub-репозиторій та підготовлено відеодемонстрацію з хронологічним описом.
+     Отримані результати демонструють повний цикл розробки бізнес-логіки та адміністративних можливостей серверної частини системи та логічно продовжують роботу, виконану в ЛР2.
+
+
+
+5 ВИКОРИСТАНІ ДЖЕРЕЛА
+1. ДСТУ 8302:2015. Бібліографічне посилання. Загальні положення та правила складання.
+2. Vision & Scope документ для програмної системи “Elevate”
+3. Звіт до лабораторної роботи №2
+4. Microsoft .NET Documentation: ASP.NET Core, Entity Framework Core – https://learn.microsoft.com/en-us/dotnet/
+
+ДОДАТОК А
+Відеозапис
+Відеозапис лабораторної роботи: https://www.youtube.com/watch?v=AMx9v5FIHUQ
+
+Хронологічний опис відеозапису:
+0:00 — Вступ. 
+1:10 — Запит на список користувачів. 
+1:20 — Запит на користувача за ID. 
+1:35 — Запит на зміну ролі користувачу. 
+2:20 — Запит на блокування користувача. 
+2:45 — Запит на розблокування користувача. 
+3:15 — Запит на створення нової команди. 
+3:55 — Запит на оновлення інформації команди за ID. 
+4:20 — Запит на видалення команди за ID. 
+4:40 — Запит на додавання учасника до команди. 
+5:30 — Запит на видалення учасника з команди. 
+6:00 — Запит на зміну ролі учасника в команді. 
+7:20 — Запит на список рівнів команди. 
+7:50 — Запит на створення рівня для команди. 
+8:25 — Запит на оновити інформацію рівня за ID. 
+8:55 — Запит на видалення рівня за ID. 
+9:25 — Запит на список пристроїв. 
+9:50 — Запит на створення нового пристроя. 
+10:15 — Запит на активацію пристроя за ID. 
+10:35 — Запит на деактивацію пристроя за ID. 
+11:10 — Запит на список бейджів в команді. 
+11:35 — Запит на додавання бейджа в команду. 
+12:05 — Запит на оновлення інформації бейджа за ID. 
+12:30 — Запит на видалення бейджа за ID. 
+13:00 — Запит на список подій в команді. 
+13:20 — Запит на створення події для команди. 
+13:45 — Запит на оновлення інформації події за ID.
+
+
+ДОДАТОК Б
+
+Рисунок Б.1 – Діаграма діяльності бізнес логіки з нарахуванням балів
+
+
+Рисунок Б.2 – Діаграма взаємодії бізнес логіки з нарахуванням балів
+
+
+Рисунок Б.3 – Діаграма діяльності адміністратора зі створенням типу події
+
+ Рисунок Б.4 – Діаграма взаємодії адміністратора зі створенням типу події
+
+
+Рисунок Б.5 – Діаграма діяльності адміністратора з додаванням користувача
+
+
+Рисунок Б.6 – Діаграма взаємодії адміністратора з додаванням користувача
+
+
+Рисунок Б.7 – Діаграма діяльності адміністратора з створенням рівня
+
+
+Рисунок Б.8 – Діаграма взаємодії адміністратора з створенням рівня
+
+
+
+Рисунок Б.9 – Діаграма діяльності адміністратора з переглядом подій
+
+Рисунок Б.10 – Діаграма взаємодії адміністратора з переглядом подій
+
+2
+
 

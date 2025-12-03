@@ -1,0 +1,25 @@
+# Build folders
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Env files
+*.env
+
+# Publish output
+publish/
+out/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE configs
+*.vscode/
