@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "author": "Uri Shaked",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 96,
+      "left": -158.36,
+      "attrs": { "fastTLS": "1" }
+    },
+    {
+      "type": "wokwi-ili9341",
+      "id": "lcd1",
+      "top": 34.2,
+      "left": 88.1,
+      "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 303.8,
+      "left": 38.4,
+      "attrs": { "color": "green", "label": "User 1" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 361.4,
+      "left": 124.8,
+      "attrs": { "color": "blue", "label": "User 2" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn3",
+      "top": 419,
+      "left": 211.2,
+      "attrs": { "color": "red", "label": "User 3" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnLeaderboard",
+      "top": 476.6,
+      "left": 297.6,
+      "attrs": { "color": "yellow", "label": "Leaderboard" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "lcd1:GND", "esp:GND.2", "black", [ "h-19.2", "v91.54" ] ],
+    [ "lcd1:RST", "esp:16", "purple", [ "h-48", "v67.2" ] ],
+    [ "lcd1:D/C", "esp:2", "#8f4814", [ "h-28.8", "v44.14" ] ],
+    [ "lcd1:SCK", "esp:18", "gray", [ "v-0.01", "h-48", "v-19.2" ] ],
+    [ "lcd1:MISO", "esp:19", "orange", [ "h-67.2", "v-9.61", "h0", "v-19.2" ] ],
+    [ "lcd1:MOSI", "esp:23", "green", [ "h-38.4", "v-67.31" ] ],
+    [ "esp:5V", "lcd1:VCC", "red", [ "h-21.83", "v-211.2", "h201.6", "v58.1" ] ],
+    [ "lcd1:CS", "esp:15", "violet", [ "h-57.6", "v105.6" ] ],
+    [ "btn1:1.l", "esp:32", "green", [ "h-249.6", "v-134.4" ] ],
+    [ "btn1:2.l", "esp:GND.1", "black", [ "h-259.2", "v-86.2" ] ],
+    [ "btn2:1.l", "esp:33", "blue", [ "h-364.8", "v-192" ] ],
+    [ "btn2:2.l", "esp:GND.1", "black", [ "h-384", "v-153.4" ] ],
+    [ "btn3:1.l", "esp:25", "red", [ "h-489.6", "v-249.6" ] ],
+    [ "btn3:2.l", "esp:GND.1", "black", [ "h-508.8", "v-220.6" ] ],
+    [ "btnLeaderboard:1.l", "esp:26", "yellow", [ "h-614.4", "v-307.2" ] ],
+    [ "btnLeaderboard:2.l", "esp:GND.1", "black", [ "h-633.6", "v-278.2" ] ]
+  ],
+  "dependencies": {}
+}
